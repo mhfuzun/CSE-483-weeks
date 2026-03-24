@@ -1,3 +1,4 @@
+UNAME_S 	:= $(shell uname -s)
 
 CC			:= gcc
 
@@ -7,7 +8,18 @@ SRC_DIR		:= ./src
 OBJ_DIR		:= ./obj
 BIN_DIR		:= ./bin
 
-CC_FLAGS	:= -lglut -lGL -lGLU
+CFLAGS		:= -Wall
+CFLAGS		+= -Wno-deprecated
+
+TARGET		:= $(OBJ_DIR)/$(MAIN_FILE)
+
+ifeq ($(UNAME_S), Darwin)
+    # Native OpenGL Framework
+    LDFLAGS 	= -framework GLUT -framework OpenGL
+else
+    # Linux
+    LDFLAGS 	= -lglut -lGL -lGLU
+endif
 
 all: dir build
 
@@ -15,7 +27,7 @@ dir:
 	mkdir -p $(SRC_DIR) $(OBJ_DIR) $(BIN_DIR)
 
 build: dir
-	$(CC) $(SRC_DIR)/$(MAIN_FILE).c -o $(OBJ_DIR)/$(MAIN_FILE) $(CC_FLAGS)
+	$(CC) $(CFLAGS) $(SRC_DIR)/$(MAIN_FILE).c -o $(OBJ_DIR)/$(MAIN_FILE) $(LDFLAGS)
 
-run:
-	$(OBJ_DIR)/$(MAIN_FILE)
+run: $(TARGET)
+	$(TARGET)
