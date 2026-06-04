@@ -4,7 +4,7 @@ CC			:= gcc
 
 MAIN_FILE	:= main
 
-SRC_DIR		:= ./src
+SRC_DIR		:= .
 OBJ_DIR		:= ./obj
 BIN_DIR		:= ./bin
 
@@ -24,7 +24,7 @@ endif
 all: dir build
 
 dir:
-	mkdir -p $(SRC_DIR) $(OBJ_DIR) $(BIN_DIR)
+	mkdir -p $(OBJ_DIR) $(BIN_DIR)
 
 build: dir
 	$(CC) $(CFLAGS) $(SRC_DIR)/$(MAIN_FILE).c -o $(OBJ_DIR)/$(MAIN_FILE) $(LDFLAGS)

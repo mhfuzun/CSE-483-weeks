@@ -1,0 +1,34 @@
+@startuml ObjectDraw
+title Sequence Diagram - Object Draw
+autonumber
+
+actor RenderLoop
+participant GameEntity
+participant GameObject
+participant "OpenGL /\nPrimitive Renderer" as Renderer
+
+RenderLoop -> GameEntity : game_entity_draw(entity)
+loop for each part in entity->parts
+    GameEntity -> GameObject : game_object_draw(part)
+    alt part == NULL or visible == false
+        GameObject --> GameEntity : return
+    else drawable part
+        GameObject -> Renderer : glColor3f(r, g, b)
+        GameObject -> Renderer : glPushMatrix()
+        GameObject -> Renderer : glTranslatef(world_x, world_y, world_z)
+        GameObject -> Renderer : glRotatef(local_rot_x/y/z)
+        alt primitive_type == CUBE
+            GameObject -> Renderer : draw_box(size_x, size_y, size_z)
+        else primitive_type == CYLINDER
+            GameObject -> Renderer : draw_cylinder(radius, size_y)
+        else primitive_type == PLANE
+            GameObject -> Renderer : draw_plane(size_x, size_z)
+        else primitive_type == SPHERE
+            GameObject -> Renderer : draw_sphere(radius)
+        end
+        GameObject -> Renderer : glPopMatrix()
+        GameObject --> GameEntity : drawn
+    end
+end
+GameEntity --> RenderLoop : frame contribution complete
+@enduml

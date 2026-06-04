@@ -9,15 +9,41 @@
 #include <math.h>
 #include <stdint.h>
 
-int SCREEN_WIDTH = 1200;
-int SCREEN_HEIGHT = 600;
+#define SCREEN_WIDTH        1200
+#define SCREEN_HEIGHT       600
 
 uint16_t lfsr = 0xB2E1; // seed
+
+int lastTime = 0;
+
+int sky_height= SCREEN_HEIGHT*0.40f;
+
+#define SNOW_COUNT          25
+float snow_velocity=50;
+float snow_movy=0;
+int snow_pos[SNOW_COUNT][2];
+
+float char_velocity = 0;
+float char_movy=0;
+float char_scale=1.0;
+float char_scale_velocity=0.3;
+
+float ball_velocity = 500;
+float ball_velocity_theta = 0;
+float ball_dx=500;
+float ball_dy=0;
+float ball_posx=0;
+float ball_posy=0;
+
+float starAngle = 0.0f; // global
 
 void init (void) {
     glClearColor (1.0, 1.0, 1.0, 0.0); // Set display-window color to white.
     glMatrixMode (GL_PROJECTION); // Set projection parameters.
     gluOrtho2D (0.0, SCREEN_WIDTH, 0.0, SCREEN_HEIGHT);
+
+    glMatrixMode(GL_MODELVIEW);
+    glLoadIdentity ( );
 }
 
 // random generator
@@ -75,6 +101,14 @@ void drawStar(int cx, int cy, int R, int r) {
     }
 
     glEnd();
+}
+
+void drawStarRotated(int cx, int cy, int R, int r) {
+    glTranslatef(cx, cy, 0);
+
+    glRotatef(starAngle, 0.0f, 0.0f, 1.0f);
+
+    drawStar(0, 0, R, r);
 }
 
 void drawTree(int x, int y, int width, int height)
@@ -190,9 +224,16 @@ void drawChar(int x, int y) {
     glEnd();
 }
 
+void update_ballTheta( void ) {
+    ball_velocity_theta = ((lfsr_next() % 1000) / 1000.0f) * 0.25f - 0.200f;
+}
+
 void screen (void)
 {
+    glMatrixMode(GL_MODELVIEW);
     glClear (GL_COLOR_BUFFER_BIT); // Clear display window.
+
+    glLoadIdentity ( );
     
     // ground
     glColor3f (1.0, 1.0, 1.0);
@@ -213,11 +254,15 @@ void screen (void)
     glEnd();
 
     // snow
-    for (int i=0; i<25; i++) {
-        int x = random_pos(SCREEN_WIDTH);
-        int y = random_pos(SCREEN_HEIGHT*0.40f) + SCREEN_HEIGHT*0.60f;
+    for (int i=0; i<SNOW_COUNT; i++) {
+        glPushMatrix();
+        int x = snow_pos[i][0];
+        int y = snow_pos[i][1];
+        
         glColor3f(1,1,1);
+        glTranslatef(0, (-((int)snow_movy % (int)(SCREEN_HEIGHT*0.60f))), 0);
         glRecti(x, y, x+10, y+10);
+        glPopMatrix();
     }
 
     // snowman
@@ -229,10 +274,12 @@ void screen (void)
     }
 
     // star
-    glColor3f (0, 0, 0);
-    drawStar(350,300,80,36);
-    glColor3f (1, 1, 0);
-    drawStar(350,300,74,30);
+    if (starAngle > 0) glColor3f (1, 0, 0);
+    else glColor3f (1, 1, 0);
+    glPushMatrix();
+    //drawStar(350,300,74,30);
+    drawStarRotated(350, 300, 74, 30);
+    glPopMatrix();
 
     // forest
     for (int i=0; i<3; i++) {
@@ -242,25 +289,128 @@ void screen (void)
     // enemy
     drawTank(100,110,300);
 
+    // player colider
+    // glColor3f(0.5,0.5,0.5);
+    // glRecti(SCREEN_WIDTH*.9-40, char_movy+102, SCREEN_WIDTH*.9-40+100*char_scale, char_movy+102+150*char_scale);
+
     // player
-    drawChar(SCREEN_WIDTH*.9, 110);
+    glPushMatrix();
+    glTranslatef(SCREEN_WIDTH*.9, 110, 0);
+    glScalef(char_scale, char_scale, 1.0);
+    glTranslatef(0, char_movy, 0);
+    drawChar(0, 0);
+    glPopMatrix();
 
     // ball
     glColor3f (1, 0, 0);
+    glPushMatrix();
+    glTranslatef(ball_posx, ball_posy, 0);
     drawCircle( 100+75, 110+60, 15 );
+    glPopMatrix();
 
     //////////////////// END ///////////////////////
 
     glFlush ( ); // Process all OpenGL routines as quickly as possible.
 }
 
+void update() {
+    int currentTime = glutGet(GLUT_ELAPSED_TIME);
+    float deltaTime = (currentTime - lastTime) / 1000.0f;
+    lastTime = currentTime;
+
+    // char
+    char_movy += char_velocity * deltaTime;
+
+    if (char_movy > 5) char_velocity -= char_movy * 0.01;
+    else {
+        char_velocity = 0;
+        char_movy = 0;
+    }
+    if (char_movy > 170) char_movy = 170;
+
+    if (char_scale < 1.0) char_scale += char_scale_velocity * deltaTime;
+    if (char_scale > 1.0) char_scale = 1.0;
+
+    // snow
+    snow_movy += snow_velocity * deltaTime;
+
+    if (snow_movy > sky_height) snow_movy = 0;
+
+    // ball
+    ball_posx += ball_dx * deltaTime;
+    ball_posy += ball_dy * deltaTime;
+
+    int repos_ball=0;
+    if (ball_posx > SCREEN_WIDTH) repos_ball = 1;
+    if (ball_posy > SCREEN_HEIGHT) repos_ball = 1;
+    if (ball_posy < 0) repos_ball = 1;
+
+    if (repos_ball) {
+        ball_posx = 0;
+        ball_posy = 0;
+
+        update_ballTheta();
+
+        ball_dx = ball_velocity * cos(ball_velocity_theta);
+        ball_dy = ball_velocity * sin(ball_velocity_theta) * ((ball_velocity_theta < 0) ? -1 : 1 );
+    }
+
+    // check
+    // SCREEN_WIDTH*.9-40, char_movy+102, SCREEN_WIDTH*.9-40+100, char_movy+250
+    if (
+        (ball_posx+100+75 > SCREEN_WIDTH*.9-40)
+        && (ball_posx+100+75 < SCREEN_WIDTH*.9-40+20)
+        && (ball_posy+110+60 > char_movy+102)
+        && (ball_posy+110+60 < char_movy+102+150*char_scale)
+    ) {
+        starAngle = 1;
+    }
+
+    // star
+    if (starAngle > 0) {
+        starAngle += 200.0f * deltaTime; // yaklaşık 60 FPS
+
+        if(starAngle > 360)
+            starAngle = 0;
+    } else 
+        starAngle = 0;
+
+    glutPostRedisplay();
+}
+
 void keyboard(unsigned char key, int x, int y)
 {
     switch(key)
     {
-        case 27: // ESC
+        case 27: // [ESC]
+        case 88: // X
+        case 120: // x
             exit(0);
             break;
+
+        case 'u':
+        case 'U':
+            char_movy += 6;
+            char_velocity = 600;
+            break;
+
+        case 'd':
+        case 'D':
+            // char_movy = 0;
+            char_scale = 0.5;
+            break;
+    }
+
+    lfsr ^= glutGet(GLUT_ELAPSED_TIME);
+}
+
+void gameInit( void ) {
+    for (int i=0; i<SNOW_COUNT; i++) {
+        int x = random_pos(SCREEN_WIDTH);
+        int y = random_pos(SCREEN_HEIGHT*0.40f) + SCREEN_HEIGHT*0.60f;
+        
+        snow_pos[i][0] = x;
+        snow_pos[i][1] = y;
     }
 }
 
@@ -273,9 +423,13 @@ int main (int argc, char** argv)
     glutCreateWindow ("Assignment 1 ~ M. Furkan UZUN"); // Create display window.
     
     init ( ); // Execute initialization procedure.
+    gameInit();
+
+    lastTime = glutGet(GLUT_ELAPSED_TIME);
     
     glutDisplayFunc (screen); // Send graphics to display window.
     glutKeyboardFunc(keyboard);
+    glutIdleFunc(update);
 
     glutMainLoop ( ); // Display everything and wait.
 
