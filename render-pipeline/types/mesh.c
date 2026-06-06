@@ -242,6 +242,13 @@ int mesh_load_obj(const char *path, mesh_t *mesh) {
     mesh->vertex_count = vertices.count;
     mesh->triangles = triangles.items;
     mesh->triangle_count = triangles.count;
+
+    printf("Model [%s] is loaded, vertex count: %ld, triangle count: %ld\n",
+        mesh->name,
+        mesh->vertex_count,
+        mesh->triangle_count
+    );
+
     return 1;
 }
 

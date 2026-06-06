@@ -1,7 +1,7 @@
 
 #include "lectures.h"
 
-#define SAFE_BUFFER_SIZE  16384
+#define SAFE_BUFFER_SIZE  128000
 
 uint32_t *color_buffer;
 float    *depth_buffer;

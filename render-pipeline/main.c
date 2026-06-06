@@ -14,8 +14,44 @@
 static mesh_t cube;
 static mesh_t teapot;
 
-static float rotationSpeed = 2.0f;
+static float rotationSpeed = 1.0f;
 static transform_t model;
+
+static void center_mesh_origin(mesh_t *mesh) {
+    if (!mesh || !mesh->vertices || mesh->vertex_count == 0) {
+        return;
+    }
+
+    float min_x = mesh->vertices[0].clip_pos.x;
+    float max_x = mesh->vertices[0].clip_pos.x;
+    float min_y = mesh->vertices[0].clip_pos.y;
+    float max_y = mesh->vertices[0].clip_pos.y;
+    float min_z = mesh->vertices[0].clip_pos.z;
+    float max_z = mesh->vertices[0].clip_pos.z;
+
+    for (size_t i = 1; i < mesh->vertex_count; i++) {
+        vector4_t p = mesh->vertices[i].clip_pos;
+
+        if (p.x < min_x) min_x = p.x;
+        if (p.x > max_x) max_x = p.x;
+        if (p.y < min_y) min_y = p.y;
+        if (p.y > max_y) max_y = p.y;
+        if (p.z < min_z) min_z = p.z;
+        if (p.z > max_z) max_z = p.z;
+    }
+
+    vector3_t center = {
+        (min_x + max_x) * 0.5f,
+        (min_y + max_y) * 0.5f,
+        (min_z + max_z) * 0.5f,
+    };
+
+    for (size_t i = 0; i < mesh->vertex_count; i++) {
+        mesh->vertices[i].clip_pos.x -= center.x;
+        mesh->vertices[i].clip_pos.y -= center.y;
+        mesh->vertices[i].clip_pos.z -= center.z;
+    }
+}
 
 void update_scene(float deltaTime) {
     static float angle;
@@ -24,7 +60,7 @@ void update_scene(float deltaTime) {
 
     model = (transform_t){
         .position = {0.0f, 0.0f, -5.0f},
-        .rotation = {angle, angle * 0.7f, angle * 0.3f},
+        .rotation = {angle, angle * 0.5f, angle * 0.3f},
         .scale = {1.0f, 1.0f, 1.0f},
     };
 }
@@ -65,7 +101,10 @@ void render_scene(void) {
 
 void setup_scene( void ) {
     cube = mesh_create_cube(2.0f);
-    mesh_load_obj("resources/utah_teapot.obj", &teapot);
+    if (mesh_load_obj("resources/utah_teapot.obj", &teapot)) {
+        center_mesh_origin(&teapot);
+    }
+    // mesh_load_obj("resources/utah_teapot_high.obj", &teapot);
 }
 
 int main(int argc, char **argv) {
