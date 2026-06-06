@@ -63,7 +63,7 @@ void render_scene(void) {
     renderBuffer();
 }
 
-void setup_scene() {
+void setup_scene( void ) {
     cube = mesh_create_cube(2.0f);
     mesh_load_obj("resources/utah_teapot.obj", &teapot);
 }
