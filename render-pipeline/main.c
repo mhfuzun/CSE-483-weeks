@@ -56,11 +56,11 @@ static void center_mesh_origin(mesh_t *mesh) {
 void update_scene(float deltaTime) {
     static float angle;
 
-    angle += deltaTime * rotationSpeed;
+    // angle += deltaTime * rotationSpeed;
 
     model = (transform_t){
         .position = {0.0f, 0.0f, -5.0f},
-        .rotation = {angle, angle * 0.5f, angle * 0.3f},
+        .rotation = {-1.370796f, 0, 0},
         .scale = {1.0f, 1.0f, 1.0f},
     };
 }
