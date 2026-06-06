@@ -11,41 +11,31 @@
 #define WINDOW_SIZE_WIDTH   800
 #define WINDOW_SIZE_HEIGHT  600
 
-void render_scene(void) {
-    static vertex_t cube_vertices[] = {
-        {{-1.0f, -1.0f, -1.0f, 1.0f}},
-        {{ 1.0f, -1.0f, -1.0f, 1.0f}},
-        {{ 1.0f,  1.0f, -1.0f, 1.0f}},
-        {{-1.0f,  1.0f, -1.0f, 1.0f}},
-        {{-1.0f, -1.0f,  1.0f, 1.0f}},
-        {{ 1.0f, -1.0f,  1.0f, 1.0f}},
-        {{ 1.0f,  1.0f,  1.0f, 1.0f}},
-        {{-1.0f,  1.0f,  1.0f, 1.0f}},
-    };
+static mesh_t cube;
+static mesh_t teapot;
 
-    static triangle_t cube_triangles[] = {
-        {0, 1, 2}, {0, 2, 3},
-        {1, 5, 6}, {1, 6, 2},
-        {5, 4, 7}, {5, 7, 6},
-        {4, 0, 3}, {4, 3, 7},
-        {3, 2, 6}, {3, 6, 7},
-        {4, 5, 1}, {4, 1, 0},
-    };
+static float rotationSpeed = 2.0f;
+static transform_t model;
 
+void update_scene(float deltaTime) {
     static float angle;
-    angle += 0.01f;
 
+    angle += deltaTime * rotationSpeed;
+
+    model = (transform_t){
+        .position = {0.0f, 0.0f, -5.0f},
+        .rotation = {angle, angle * 0.7f, angle * 0.3f},
+        .scale = {1.0f, 1.0f, 1.0f},
+    };
+}
+
+void render_scene(void) {
     transform_t camera = {
         .position = {0.0f, 0.0f, 0.0f},
         .rotation = {0.0f, 0.0f, 0.0f},
         .scale = {1.0f, 1.0f, 1.0f},
     };
-    transform_t model = {
-        .position = {0.0f, 0.0f, -5.0f},
-        .rotation = {angle, angle * 0.7f, angle * 0.3f},
-        .scale = {1.0f, 1.0f, 1.0f},
-    };
-
+    
     matrix4_t cameraProjection = createCameraProjectionMatrix(
         camera,
         0.1f,
@@ -62,15 +52,20 @@ void render_scene(void) {
 
     clearBuffers();
     addRenderQueue(
-        cube_vertices,
-        sizeof(cube_vertices) / sizeof(cube_vertices[0]),
-        cube_triangles,
-        sizeof(cube_triangles) / sizeof(cube_triangles[0]),
+        teapot.vertices,
+        (int)teapot.vertex_count,
+        teapot.triangles,
+        (int)teapot.triangle_count,
         &model,
         &cameraProjection,
         &viewport
     );
     renderBuffer();
+}
+
+void setup_scene() {
+    cube = mesh_create_cube(2.0f);
+    mesh_load_obj("resources/utah_teapot.obj", &teapot);
 }
 
 int main(int argc, char **argv) {
@@ -91,6 +86,8 @@ int main(int argc, char **argv) {
         return 1;
     }
 
+    setup_scene();
+
     while (run) {
         double delta_time = getDeltaTime(&lastTime);
         (void)delta_time;
@@ -98,7 +95,7 @@ int main(int argc, char **argv) {
         clear_color_buffer();
         clear_depth_buffer();
 
-        // update_scene(delta_time);
+        update_scene(delta_time);
         render_scene();
 
         backend->present(getColorBuffer(), WINDOW_SIZE_WIDTH, WINDOW_SIZE_HEIGHT);

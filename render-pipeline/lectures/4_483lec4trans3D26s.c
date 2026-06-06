@@ -323,40 +323,34 @@ matrix4_t matrixShear(
     return M;
 }
 
+// model coordinate -> world coordinate
 matrix4_t getModelMatrix(
     transform_t* transform
 ) {
     matrix4_t M = loadIdentityMatrix();
+
+    M = matrixScaleOrigin(
+        &M,
+
+        transform->scale.x,
+        transform->scale.y,
+        transform->scale.z
+    );
+
+    M = matrixRotateOrigin(
+        &M,
+        
+        transform->rotation.x,
+        transform->rotation.y,
+        transform->rotation.z
+    );
+
     M = matrixTranslate(
         &M,
         
         transform->position.x,
         transform->position.y,
         transform->position.z
-    );
-
-    M = matrixRotate(
-        &M,
-        
-        transform->position.x,
-        transform->position.y,
-        transform->position.z,
-
-        transform->rotation.x,
-        transform->rotation.y,
-        transform->rotation.z
-    );
-
-    M = matrixScale(
-        &M,
-
-        transform->position.x,
-        transform->position.y,
-        transform->position.z,
-
-        transform->scale.x,
-        transform->scale.y,
-        transform->scale.z
     );
 
     return M;

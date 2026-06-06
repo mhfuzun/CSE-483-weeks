@@ -1,7 +1,7 @@
 
 #include "lectures.h"
 
-#define SAFE_BUFFER_SIZE  2048
+#define SAFE_BUFFER_SIZE  16384
 
 uint32_t *color_buffer;
 float    *depth_buffer;
@@ -71,8 +71,9 @@ void addRenderQueue(
     matrix4_t* cameraProjection,
     matrix4_t* viewport
 ) {
-    if (vertex_count > SAFE_BUFFER_SIZE)
+    if (vertex_count <= 0 || vertex_count > SAFE_BUFFER_SIZE || triangleCount <= 0) {
         return;
+    }
 
     int startTriangle = bufferB_ctr;
 
@@ -88,13 +89,30 @@ void addRenderQueue(
     // Step 2
     // clipping
     for (int i=0; i<triangleCount; i++) {
-        bufferB_ctr += clipPolygon(
-            bufferB,
-            bufferB_ctr,
+        if (
+            t[i].p1 < 0 || t[i].p1 >= vertex_count ||
+            t[i].p2 < 0 || t[i].p2 >= vertex_count ||
+            t[i].p3 < 0 || t[i].p3 >= vertex_count
+        ) {
+            continue;
+        }
+
+        renderTriangle_t clipped[16];
+        int produced = clipPolygon(
+            clipped,
+            0,
             &(bufferA[t[i].p1]),
             &(bufferA[t[i].p2]),
             &(bufferA[t[i].p3])
         );
+
+        if (bufferB_ctr + produced > SAFE_BUFFER_SIZE) {
+            break;
+        }
+
+        for (int j = 0; j < produced; j++) {
+            bufferB[bufferB_ctr++] = clipped[j];
+        }
     }
 
     // Step 3
