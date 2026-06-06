@@ -3,11 +3,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
+#include "lectures.h"
 
 // Line Drawing
-
-typedef void (*putPixel)(int x, int y);
-
 void lineDraw_preCheck(int *x0, int *y0, int *x1, int *y1) {
     if (*x0 > *x1) {
         int tmp = *x0;
@@ -21,7 +19,7 @@ void lineDraw_preCheck(int *x0, int *y0, int *x1, int *y1) {
 }
 
 void lineDraw_LineEquation(putPixel pp, int x0, int y0, int x1, int y1) {
-    lineDraw_preCheck(x0, y0, x1, y1);
+    lineDraw_preCheck(&x0, &y0, &x1, &y1);
 
     int dx = x1 - x0;
     int dy = y1 - y0;
@@ -29,8 +27,7 @@ void lineDraw_LineEquation(putPixel pp, int x0, int y0, int x1, int y1) {
     float m = dy / dx;
     float b = y0 - m * x0;
 
-
-    if (abs(m) <= 1) {
+    if (fabs(m) <= 1) {
         for (int x = x0; x <= x1; x++) {
             int y = m * x + b;
             pp(x, y);
@@ -67,10 +64,6 @@ void lineDraw_DDA(putPixel pp, int x0, int y0, int x1, int y1) {
         y += y_inc;
     }
 }
-
-#include <stdlib.h>
-
-typedef void (*putPixel)(int x, int y);
 
 void lineDraw_Bresenham(putPixel pp, int x0, int y0, int x1, int y1) {
     int dx = abs(x1 - x0);

@@ -4,10 +4,19 @@
 #include "types/vector.h"
 
 typedef struct {
-    vector3_t position;
-    vector2_t tex_coord;
-    vector3_t normal;
+    vector4_t clip_pos;
 } vertex_t;
 
+typedef struct {
+    int p1;
+    int p2;
+    int p3;
+} triangle_t;
+
+typedef struct {
+    vertex_t p1;
+    vertex_t p2;
+    vertex_t p3;
+} renderTriangle_t;
 
 #endif // __VERTEX_H__

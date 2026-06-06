@@ -12,9 +12,14 @@ void shutdown(void) {
     return;
 }
 
+int should_close(void) {
+    return 0;
+}
+
 backend_t backend = {
     .init = init,
     .present = present,
+    .should_close = should_close,
     .shutdown = shutdown
 };
 

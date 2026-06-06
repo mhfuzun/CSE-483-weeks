@@ -12,7 +12,11 @@ typedef struct {
 typedef struct {
     int  (*init)(int width, int height);
     void (*present)(uint32_t *pixels, int width, int height);
+    int  (*should_close)(void);
     void (*shutdown)(void);
-} DisplayBackend;
+} backend_t;
+
+backend_t *get_sdl_backend(void);
+backend_t *get_fb0_backend(void);
 
 #endif // __BACKEND_H__
