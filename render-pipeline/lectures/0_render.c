@@ -8,11 +8,44 @@ float    *depth_buffer;
 int width = 800;
 int height = 600;
 
-static vertex_t bufferA[SAFE_BUFFER_SIZE];
+static vertex_projected_t bufferA[SAFE_BUFFER_SIZE];
 static renderTriangle_t bufferB[SAFE_BUFFER_SIZE];
 
 static int bufferA_ctr;
 static int bufferB_ctr;
+
+static vector3_t vector4_xyz(vector4_t v) {
+    return (vector3_t){v.x, v.y, v.z};
+}
+
+static vector3_t transform_normal(const matrix4_t *m, vector3_t n) {
+    float a = m->row[0].x;
+    float b = m->row[0].y;
+    float c = m->row[0].z;
+    float d = m->row[1].x;
+    float e = m->row[1].y;
+    float f = m->row[1].z;
+    float g = m->row[2].x;
+    float h = m->row[2].y;
+    float i = m->row[2].z;
+
+    float det = a * (e * i - f * h)
+              - b * (d * i - f * g)
+              + c * (d * h - e * g);
+
+    if (fabsf(det) < 0.000001f) {
+        return n;
+    }
+
+    float inv_det = 1.0f / det;
+    vector3_t r = {
+        ((e * i - f * h) * n.x + (f * g - d * i) * n.y + (d * h - e * g) * n.z) * inv_det,
+        ((c * h - b * i) * n.x + (a * i - c * g) * n.y + (b * g - a * h) * n.z) * inv_det,
+        ((b * f - c * e) * n.x + (c * d - a * f) * n.y + (a * e - b * d) * n.z) * inv_det,
+    };
+
+    return r;
+}
 
 int render_init(
     int _width,
@@ -67,6 +100,7 @@ void addRenderQueue(
     int vertex_count,
     triangle_t *t,
     int triangleCount,
+    texture_t* texture,
     transform_t* model,
     matrix4_t* cameraProjection,
     matrix4_t* viewport
@@ -79,11 +113,22 @@ void addRenderQueue(
 
     // Step 1
     // Transform vertices to clip space: Projection * View * Model * position
-    matrix4_t M = getModelMatrix(model);
-    M = matrix4_mul(cameraProjection, &M);
+    matrix4_t MModel = getModelMatrix(model);
+    matrix4_t MProject = matrix4_mul(cameraProjection, &MModel);
     
     for (int i = 0; i < vertex_count; i++) {
-        bufferA[i].clip_pos = matrix4_mul_vec4(&M, &(v[i].clip_pos));
+        bufferA[i].clip_pos = matrix4_mul_vec4(&MProject, &(v[i].clip_pos));
+        bufferA[i].uv = v[i].uv;
+
+        vector4_t world_pos = matrix4_mul_vec4(&MModel, &(v[i].clip_pos));
+        bufferA[i].world_pos = vector4_xyz(world_pos);
+
+        bufferA[i].normal = transform_normal(&MModel, v[i].normal);
+        if (normalizeVector3(&bufferA[i].normal) < 0) {
+            bufferA[i].normal = (vector3_t){0.0f, 0.0f, 1.0f};
+        }
+
+        bufferA[i].inv_w = 1.0f / bufferA[i].clip_pos.w;
     }
 
     // Step 2
@@ -111,6 +156,7 @@ void addRenderQueue(
         }
 
         for (int j = 0; j < produced; j++) {
+            clipped[j].texture = t[i].texture ? t[i].texture : texture;
             bufferB[bufferB_ctr++] = clipped[j];
         }
     }
@@ -140,28 +186,20 @@ void putPixelRender(int x, int y) {
     color_buffer[y * width + x] = 0xffffffffu;
 }
 
-void renderBuffer(void) {
+void renderBuffer(
+    vector3_t* viewer_world_pos,
+    light_t* light
+) {
     for (int i=0; i<bufferB_ctr; i++) {
-        lineDraw_Bresenham(
-            putPixelRender,
-            bufferB[i].p1.clip_pos.x,
-            bufferB[i].p1.clip_pos.y,
-            bufferB[i].p2.clip_pos.x,
-            bufferB[i].p2.clip_pos.y
-        );
-        lineDraw_Bresenham(
-            putPixelRender,
-            bufferB[i].p2.clip_pos.x,
-            bufferB[i].p2.clip_pos.y,
-            bufferB[i].p3.clip_pos.x,
-            bufferB[i].p3.clip_pos.y
-        );
-        lineDraw_Bresenham(
-            putPixelRender,
-            bufferB[i].p3.clip_pos.x,
-            bufferB[i].p3.clip_pos.y,
-            bufferB[i].p1.clip_pos.x,
-            bufferB[i].p1.clip_pos.y
+        polygon_render( // rasterize
+            color_buffer,
+            depth_buffer,
+            width,
+            height,
+            &bufferB[i],
+            bufferB[i].texture,
+            viewer_world_pos,
+            light
         );
     }
 }

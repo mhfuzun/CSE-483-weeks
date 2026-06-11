@@ -248,3 +248,17 @@ Normal:
     model/view uzayına normal matrix ile dönüştürülür;
     pikselde perspective-correct interpolate edilir ve normalize edilir.
 ```
+
+1. Local position -> world position
+2. Normal -> world normal using normal matrix
+3. World position -> view -> clip position
+4. Homogeneous clipping
+5. Perspective divide
+6. Viewport transform
+7. Triangle rasterization
+8. Pixel için barycentric hesapla
+9. Depth hesapla, z-buffer kontrol et
+10. uv, normal, world_pos değerlerini perspective-correct interpolate et
+11. Texture sample al
+12. Per-pixel lighting hesapla
+13. Color buffer’a yaz

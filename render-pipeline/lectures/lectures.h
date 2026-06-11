@@ -9,6 +9,8 @@
 #include "vector.h"
 #include "mesh.h"
 #include "transform.h"
+#include "color.h"
+#include "object.h"
 
 // Lecture 1
 // 1_483lec1line24s
@@ -50,7 +52,25 @@ matrix4_t getModelMatrix(transform_t* transform);
 matrix4_t getProjectionMatrix(float n,float f,float projectionAngle,float aspectRatio);
 matrix4_t createCameraProjectionMatrix(transform_t camera,float znear,float zfar,float projecitonAngle,float aspectRatio);
 matrix4_t createViewPortMatrix(float xmin,float ymin,float xmax,float ymax);
-int clipPolygon(renderTriangle_t* triangles, int base, vertex_t* v1, vertex_t* v2, vertex_t* v3);
+int clipPolygon(
+    renderTriangle_t* triangles,
+    int base,
+    vertex_projected_t* v1,
+    vertex_projected_t* v2,
+    vertex_projected_t* v3
+);
+
+// Lecture 9
+void polygon_render(
+    uint32_t* color_buffer,
+    float* depth_buffer,
+    int screen_width,
+    int screen_height,
+    renderTriangle_t* triangle,
+    texture_t* texture,
+    vector3_t* viewer_world_pos,
+    light_t* light
+);
 
 // Render
 int render_init(int _width,int _height);
@@ -63,11 +83,15 @@ void addRenderQueue(
     int vertex_count,
     triangle_t *t,
     int triangleCount,
+    texture_t* texture,
     transform_t* model,
     matrix4_t* cameraProjection,
     matrix4_t* viewport
 );
-void renderBuffer(void);
+void renderBuffer(
+    vector3_t* viewer_world_pos,
+    light_t* light
+);
 uint32_t* getColorBuffer( void );
 
 #endif // __LECTURES_H__

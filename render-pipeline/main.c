@@ -8,14 +8,31 @@
 #include "ptime.h"
 #include "lectures/lectures.h"
 
-#define WINDOW_SIZE_WIDTH   800
-#define WINDOW_SIZE_HEIGHT  600
+#define WINDOW_SIZE_WIDTH   1200
+#define WINDOW_SIZE_HEIGHT  900
 
 static mesh_t cube;
 static mesh_t teapot;
 
 static float rotationSpeed = 1.0f;
 static transform_t model;
+static uint32_t white_texel = 0xffffffffu;
+static texture_t default_texture = {
+    .color_buffer = &white_texel,
+    .width = 1,
+    .height = 1,
+    .invert_y = 0,
+};
+static vector3_t viewer_world_pos = {0.0f, 0.0f, 0.0f};
+static light_t default_light = {
+    .world_pos = {2.0f, 3.0f, 0.0f},
+    .ambient = {1.0f, 1.0f, 1.0f},
+    .diffuse = {1.0f, 1.0f, 1.0f},
+    .ka = 0.18f,
+    .kd = 0.78f,
+    .ks = 0.22f,
+    .ns = 32.0f,
+};
 
 static void center_mesh_origin(mesh_t *mesh) {
     if (!mesh || !mesh->vertices || mesh->vertex_count == 0) {
@@ -92,16 +109,20 @@ void render_scene(void) {
         (int)teapot.vertex_count,
         teapot.triangles,
         (int)teapot.triangle_count,
+        &default_texture,
         &model,
         &cameraProjection,
         &viewport
     );
-    renderBuffer();
+    renderBuffer(&viewer_world_pos, &default_light);
 }
 
 void setup_scene( void ) {
     cube = mesh_create_cube(2.0f);
-    if (mesh_load_obj("resources/utah_teapot.obj", &teapot)) {
+    if (
+        mesh_load_obj("resources/utah_teapot_edited.obj", &teapot) 
+        // || mesh_load_obj("resources/utah_teapot.obj", &teapot)
+    ) {
         center_mesh_origin(&teapot);
     }
     // mesh_load_obj("resources/utah_teapot_high.obj", &teapot);

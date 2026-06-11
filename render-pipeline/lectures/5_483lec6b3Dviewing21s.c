@@ -78,22 +78,35 @@ matrix4_t createViewPortMatrix(
     };
 }
 
-vertex_t lerpVertex(vertex_t a, vertex_t b, float t) {
-    vertex_t r;
+vertex_projected_t lerpVertex(vertex_projected_t a, vertex_projected_t b, float t) {
+    vertex_projected_t r;
 
     r.clip_pos.x = a.clip_pos.x + t * (b.clip_pos.x - a.clip_pos.x);
     r.clip_pos.y = a.clip_pos.y + t * (b.clip_pos.y - a.clip_pos.y);
     r.clip_pos.z = a.clip_pos.z + t * (b.clip_pos.z - a.clip_pos.z);
     r.clip_pos.w = a.clip_pos.w + t * (b.clip_pos.w - a.clip_pos.w);
 
+    r.world_pos.x = a.world_pos.x + t * (b.world_pos.x - a.world_pos.x);
+    r.world_pos.y = a.world_pos.y + t * (b.world_pos.y - a.world_pos.y);
+    r.world_pos.z = a.world_pos.z + t * (b.world_pos.z - a.world_pos.z);
+
+    r.normal.x = a.normal.x + t * (b.normal.x - a.normal.x);
+    r.normal.y = a.normal.y + t * (b.normal.y - a.normal.y);
+    r.normal.z = a.normal.z + t * (b.normal.z - a.normal.z);
+    
+    r.uv.x = a.uv.x + t * (b.uv.x - a.uv.x);
+    r.uv.y = a.uv.y + t * (b.uv.y - a.uv.y);
+
+    r.inv_w = 1.0f / r.clip_pos.w;
+
     return r;
 }
 
 // clipping for single plane
 int clipPolygonAgainstPlane(
-    vertex_t *in,
+    vertex_projected_t *in,
     int in_count,
-    vertex_t *out,
+    vertex_projected_t *out,
     PlaneFunc plane
 ) {
     if (in_count == 0)
@@ -101,12 +114,12 @@ int clipPolygonAgainstPlane(
 
     int out_count = 0;
 
-    vertex_t prev = in[in_count - 1];
+    vertex_projected_t prev = in[in_count - 1];
     float fprev = plane(prev.clip_pos);
     int prev_inside = fprev >= 0.0f;
 
     for (int i = 0; i < in_count; i++) {
-        vertex_t curr = in[i];
+        vertex_projected_t curr = in[i];
         float fcurr = plane(curr.clip_pos);
         int curr_inside = fcurr >= 0.0f;
 
@@ -141,12 +154,12 @@ int clipPolygonAgainstPlane(
 int clipPolygon(
     renderTriangle_t* triangles,
     int base,
-    vertex_t* v1,
-    vertex_t* v2,
-    vertex_t* v3
+    vertex_projected_t* v1,
+    vertex_projected_t* v2,
+    vertex_projected_t* v3
 ) {
-    vertex_t polyA[16];
-    vertex_t polyB[16];
+    vertex_projected_t polyA[16];
+    vertex_projected_t polyB[16];
 
     int count = 3;
     polyA[0] = *v1;
